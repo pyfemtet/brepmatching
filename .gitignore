@@ -1,3 +1,6 @@
+.idea
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -145,3 +148,4 @@ tblogs/*
 *.csv
 
 notebooks/*.csv
+.vscode/settings.json

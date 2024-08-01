@@ -3,5 +3,6 @@
     "files.associations": {
         "tuple": "cpp"
     },
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "iis.configDir": ""
 }

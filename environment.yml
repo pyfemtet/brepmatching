@@ -29,6 +29,8 @@ dependencies:
   - pip:
     - xxhash
     - pyrender
+    - black==24.4.2
+    - pillow==9.5.0
     - git+https://github.com/degravity/automate.git@v1.0.4
     - git+https://github.com/deGravity/onshape-apikey-py3
 
