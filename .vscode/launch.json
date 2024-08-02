@@ -492,6 +492,8 @@
                 "1",
                 "--num_workers",
                 "1",  // Or 20. If so, vscode takes too long time to launch workers
+                // hyperparameter
+                "--bce_loss_weight", "2",
                 // optimization hyperparameter
                 "--max_epochs",
                 "1000",
