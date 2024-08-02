@@ -1,0 +1,18 @@
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────        Test metric                 DataLoader 0
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────      test_greedy_loss           0.3656766414642334
+  test_iter_correct/edges        0.8386904761904762
+  test_iter_correct/faces        0.6587301587301587
+ test_iter_correct/vertices      0.9509803921568628
+ test_iter_incorrect/edges              0.0
+ test_iter_incorrect/faces      0.037037037037037035
+test_iter_incorrect/vertices            0.0
+   test_iter_missed/edges        0.1613095238095238
+   test_iter_missed/faces       0.30423280423280424
+ test_iter_missed/vertices      0.049019607843137254
+ test_iter_precision/edges              1.0
+ test_iter_precision/faces       0.8888888888888888
+test_iter_precision/vertices            1.0
+   test_iter_recall/edges        0.7034188034188033
+   test_iter_recall/faces        0.5571428571428572
+ test_iter_recall/vertices       0.8958333333333334
+         test_loss               0.3656766414642334
