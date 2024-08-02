@@ -467,6 +467,37 @@
                 // "--override_args",
                 "--gpus", "1"
             ]
+        },
+        {
+            "name": "training (by pyfemtet)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--name",
+                "debug_by_pyfemtet",
+                "--zip_path",
+                "data/example_dataset.zip",
+                "--cache_path",
+                "tmp/example_dataset_cache_split.pt",
+                // "--shuffle",  // cause checkpoint name error
+                // "false",
+                // machine environment
+                "--debug_data",
+                "--accelerator",
+                "gpu",
+                "--devices",
+                "1",
+                "--num_workers",
+                "1",  // Or 20. If so, vscode takes too long time to launch workers
+                // optimization hyperparameter
+                "--max_epochs",
+                "1000",
+                "--batch_size",
+                "16"
+            ]
         }
     ]
 }
