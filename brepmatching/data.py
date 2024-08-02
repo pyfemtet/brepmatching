@@ -500,7 +500,7 @@ def load_data(zip_path=None, cache_path=None):
 
 follow_batch=['left_vertices','right_vertices','left_edges', 'right_edges','left_faces','right_faces', 'faces_matches', 'edges_matches', 'vertices_matches']
 class BRepMatchingDataset(torch.utils.data.Dataset):
-    def __init__(self, cached_data, debug=False, mode='train', seed=42, test_size=0.1, val_size=0.1, test_identity=False, transforms=None, require_onshape_matchings=True, enable_blacklist=True):
+    def __init__(self, cached_data, debug=False, mode='train', seed=42, test_size=0.1, val_size=0.1, test_identity=False, transforms=None, require_onshape_matchings=False, enable_blacklist=True):
         self.debug = debug
         self.transforms = compose(*transforms[::-1]) if transforms else None
 
