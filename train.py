@@ -34,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--no_test', action='store_true')
     parser.add_argument('--validate', action='store_true')
     parser.add_argument('--override_args', action='store_true')
+    parser.add_argument('--predict', action='store_true')
 
     parser = pl.Trainer.add_argparse_args(parser)
     parser = BRepMatchingDataModule.add_argparse_args(parser)
@@ -90,6 +91,49 @@ if __name__ == '__main__':
     callbacks = model.get_callbacks()
 
     trainer = pl.Trainer.from_argparse_args(args, logger=logger, callbacks = callbacks)
+
+    if args.predict:
+        data.setup()
+
+        # for type hint
+        from brepmatching.matching_model import InitStrategy
+        from brepmatching.data import BRepMatchingDataset
+        trainer: pl.Trainer = trainer
+        data_module: BRepMatchingDataModule = data
+        data_set: BRepMatchingDataset = data_module.train_ds
+        data_loader: DataLoader = data_module.predict_dataloader()
+        loss_tensor: torch.Tensor = None
+        hetdata_batch_after: 'HetDataBatch' = None
+
+        # pick a HetDataBatch
+        hetdata_batch = next(iter(data_loader))
+
+        # do_iteration
+        loss_tensor, hetdata_batch_after = model.do_iteration(
+            hetdata_batch.clone(),
+            threshold := 0.7,  # threshold. by paper, 0.7.
+            InitStrategy,
+            False  # use adjacency or not.
+        )
+
+        # rendering result
+        from brepmatching.visualization import render_predictions, show_image
+        im = show_image(
+            render_predictions(
+                hetdata_batch_after,
+                hetdata_batch_after.cur_faces_matches
+            )
+        )
+        im.save(
+            os.path.join(
+                os.path.dirname(__file__),
+                f"predict_result(threshold_{threshold}).png"
+            )
+        )
+        print("predict_result.png was saved!")
+
+        import sys
+        sys.exit()
 
     if not args.no_train:
         trainer.fit(model, data)

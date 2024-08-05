@@ -500,6 +500,43 @@
                 "--batch_size",
                 "16"
             ]
+        },
+        {
+            "name": "predicting (by pyfemtet)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                // common
+                "--name",
+                "debug_by_pyfemtet",
+                "--zip_path",
+                "data/data_to_predict.zip",
+                // "--cache_path",
+                // "tmp/data_to_predict_cache.pt",
+                "--debug_data",
+                "--accelerator",
+                "gpu",
+                "--devices",
+                "1",
+                "--num_workers",
+                "1",  // Or 20. If so, vscode takes too long time to launch workers
+                // predict mode (Assuming matching of two parasolids)
+                "--predict",
+                "--no_train",
+                "--checkpoint_path",
+                "debug_by_pyfemtet/version_3/checkpoints/last.ckpt",
+                "--batch_size",
+                "1",
+                "--single_set",
+                "true",
+                "--val_size",
+                "0",
+                "--test_size",
+                "0",
+            ]
         }
     ]
 }

@@ -188,7 +188,7 @@ if __name__ == '__main__':
     # )
 
     prepare_predict(
-        zip_filename='data_to_predict.zip',
+        zip_filename='../data_to_predict.zip',
         exact=False,
         silent=False,
     )

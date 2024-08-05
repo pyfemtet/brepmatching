@@ -643,6 +643,10 @@ class BRepMatchingDataModule(pl.LightningDataModule):
         # TODO: fix this thing
         return DataLoader(self.test_ds, batch_size=self.test_batch_size, num_workers=self.num_workers,shuffle=False, persistent_workers=self.persistent_workers, follow_batch=follow_batch)
 
+    def predict_dataloader(self):
+        # TODO: fix this thing
+        return self.train_dataloader()
+
 
 def make_filter(cache, face_thresh = 1000, edge_thresh = 1000, vert_thresh = 1000, ignore_origins = False):
     filt = []
