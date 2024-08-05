@@ -11,6 +11,51 @@ from onshape_client.oas.models.bt_feature_definition_call1406 import (
 import random
 
 
+def init_var_model(c, paths, modelName, codeVersion, orinalModelInfo):
+    varNumber = orinalModelInfo['nVariations'] + 1
+    varInfo = {
+        'name': orinalModelInfo['name'],
+        'did': orinalModelInfo['did'],
+        'wid': orinalModelInfo['wid'],
+        'eid': orinalModelInfo['eid'],
+        'link_orig': orinalModelInfo['link'],
+        'mv_orig': orinalModelInfo['mvid'],
+        'ps_orig': orinalModelInfo['ps'],
+        'mv_var': 'TBD',
+        'ps_var': orinalModelInfo['name'] + 'V' + str(varNumber) + '.x_t',
+        'matchFile': orinalModelInfo['name'] + 'V0' + str(varNumber) + '.json',
+        'codeVersion': codeVersion,
+        'fail': 0,
+        'seed': -1,
+    }
+
+    new_doc = newOnshapeEl.create(modelName)
+    imported_part_studio = new_doc.import_file(paths['OriginalBrepsPath'] / (modelName + ".x_t"), allow_faulty_parts=True)
+
+    # set reference to model via onshape
+    setAttributes(c, orinalModelInfo['did'], orinalModelInfo['wid'], orinalModelInfo['eid'])
+    orginReferences = getReferences (c, orinalModelInfo['did'], orinalModelInfo['wid'], orinalModelInfo['eid'])
+
+    # create dict
+    varModelInfo = {
+        # 'name': modelName,
+        'did': imported_part_studio.did,
+        'wid': imported_part_studio.wvmid,
+        'eid': imported_part_studio.eid,
+        'mv_var': c.historyfromWorkspace(varInfo['did'], varInfo['wid']).json()[0]['microversionId']
+        }
+    varModelInfo['link_var'] = 'https://cad.onshape.com/documents/' + varModelInfo['did'] + '/w/' + varModelInfo['wid'] + '/m/' + varModelInfo['mv_var'] + '/e/' + varModelInfo['eid']
+    varInfo.update(varModelInfo)
+
+    # export parasolid
+    exportParasolid(c, varInfo['did'], varInfo['wid'], varInfo['eid'],
+                    paths['BrepsWithReferencePath'] / varInfo['ps_var'])
+
+    return varInfo
+
+
+
+
 # Create a Variation
 # input: orinalModelInfo orginReferences
 # output: variationInfo
