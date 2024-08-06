@@ -34,8 +34,12 @@ if __name__ == '__main__':
     orinalModelInfo, orginReferences = mg.initNewModel(c, paths, modelName='my_model')
 
     # get variated model by same way
-    # varInfo: dict = mg.createVariation(c, paths, 1, orinalModelInfo, orginReferences, False, False)
-    varInfo: dict = mg.init_var_model(c, paths, 'my_model_var', 0, orinalModelInfo)
+    from tqdm import tqdm
+    from time import sleep
+    interval = 20  # waiting stabilizes CreateVariation process (even if the ERROR state returned, the shape on onshape seems good. So perhaps this is an environmental reason).
+    for i in tqdm(range(interval), f'wait {interval} sec'): sleep(1)
+    varInfo: dict = mg.createVariation(c, paths, 1, orinalModelInfo, orginReferences, True, True)
+    # varInfo: dict = mg.init_var_model(c, paths, 'my_model_var', 0, orinalModelInfo)
 
     # make csv
     orinalModelInfo['nVariations'] = 1  # update

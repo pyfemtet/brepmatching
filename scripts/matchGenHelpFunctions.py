@@ -77,16 +77,22 @@ def createVariation(c, paths, codeVersion, orinalModelInfo, orginReferences, Geo
     }
     varInfo['seed'] = random.randint(10, 100000) 
     varResult = createVariations(c, varInfo['did'], varInfo['wid'], varInfo['eid'], varInfo['seed'], GeoTransf,TopoTransf )
-    stop = 10
-    while ((varResult['state'] != "OK") & stop>0):
-        if (varResult['state'] != "ABORT"):
+    stop = 100
+
+    from tqdm import tqdm
+
+    for i in tqdm(range(stop)):
+        if varResult['state'] == "OK":
+            break
+
+        if varResult['state'] != "ABORT":
             deleteFeature(c, varInfo['did'], varInfo['wid'], varInfo['eid'], varResult['fid'])
         varInfo['seed'] = random.randint(10, 100000) 
         varResult = createVariations(c, varInfo['did'], varInfo['wid'], varInfo['eid'],varInfo['seed'], GeoTransf,TopoTransf)
-        stop-=1 
-    if (varResult['state'] != "OK"):
+
+    if varResult['state'] != "OK":
         varInfo['fail'] = 1
-        print("failed more than 10 times")
+        print(f"failed more than {stop} times")
     else:
         varReferences = getReferences (c, varInfo['did'], varInfo['wid'], varInfo['eid'])
         exportParasolid(c, varInfo['did'], varInfo['wid'], varInfo['eid'], paths['BrepsWithReferencePath'] / varInfo['ps_var'])
