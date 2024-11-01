@@ -1,18 +1,45 @@
-# brepmatching
-Learning to match brep topology.
+# BRepMatching-Femtet
 
-### Getting Started
+## About This Library
+BRepMatching-Femtet is a library that assigns permanent IDs to the topology of two Parasolid files and estimates their correspondence. This library is derived from [BRepMatching](https://github.com/deGravity/BRepMatching) (written by deGravity (Ben Jones)) that is the implementation of the paper[1].
 
-Create a new environment with conda (or mamba) from environment.yml, then
-editably install brepmatching with pip (tested with mamba on Linux and
-Windows):
+
+## Installation
+You can install it via pip:
+
+```pip install brepmatching-femtet```
+
+Please note that a licensed version of Femtet is required for this library to function properly.
+
+
+## License
+This library is licensed under the MIT License.
+It utilizes Eigen 3.4.0, which can be obtained from [this site](https://eigen.tuxfamily.org/index.php?title=Main_Page).
+
+
+## Usage
+
+```python
+from brepmatching.pyfemtet_scripts import Predictor
+from win32com.client import Dispatch
+
+# get Femtet control
+Femtet = Dispatch('FemtetMacro.Femtet')
+
+# initialize (create temporary foldere and child process)
+predictor = Predictor(Femtet)
+
+# predict
+id_map: dict = predictor.predict(
+    'orig.x_t',
+    'var.x_t',
+)
+
+# finalize (delete temporary folder and terminate child process)
+del predictor
 
 ```
-conda env create -f environment.yml
-conda activate brepmatching
-python setup.py install
-pip install -e .
-```
 
-Using this code requires an active Parasolid license and installation, create an environmental variable called `$PARASOLID_BASE` pointing to your
-Parasolid install prior to any of the above instructions in order to link against the Parasolid library.
+## References
+[1] B-rep Matching for Collaborating Across CAD Systems,  
+[https://doi.org/10.48550/arXiv.2306.03169](https://doi.org/10.48550/arXiv.2306.03169)

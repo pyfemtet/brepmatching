@@ -23,10 +23,12 @@ def render_predictions(
     edge_match_preds = None, 
     vertex_match_preds = None,
     prioritize_missing = False,
-    false_match_colormap = ([0.083, 1.0, 1.0], [.167, 1.0, 1.0]),
-    missing_match_colormap = ([0.75, 1.0, 0.2], [1.0, 1.0, 1.0]),
-    true_match_colormap = ([0.33, 1.0, 0.7], [0.67, 1.0, 1.0]),
-    unmatched_color = [0.66, 0.66, 0.66],
+    # hsv
+    false_match_colormap = ([0.083, 1.0, 1.0], [.167, 1.0, 1.0]),  # orange ~ yellow, predicted mathing
+    missing_match_colormap = ([0.75, 1.0, 0.2], [1.0, 1.0, 1.0]),  # dark purple ~ pink, coincidence but missed?
+    true_match_colormap = ([0.33, 1.0, 0.7], [0.67, 1.0, 1.0]),  # blue ~ green, coincidence matching
+    # rgb
+    unmatched_color = [0.66, 0.66, 0.66],  # gray
     renderer=None,
     render_params=rendering.RendererParams(400,400)
 ):

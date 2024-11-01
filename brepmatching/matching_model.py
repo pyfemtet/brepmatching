@@ -6,9 +6,9 @@ from torchmetrics import MeanMetric
 import numpy as np
 import torch.nn.functional as F
 from brepmatching.utils import (
-    plot_the_fives,
-    plot_multiple_metrics,
-    plot_tradeoff,
+    # plot_the_fives,
+    # plot_multiple_metrics,
+    # plot_tradeoff,
     NUM_METRICS,
     METRIC_COLS,
     TOPO_KINDS,
@@ -24,7 +24,7 @@ from brepmatching.utils import (
     get_batch_offsets
 )
 from brepmatching.loss import *
-from automate import HetData
+from automate.automate import HetData
 import pandas as pd
 from typing import Any, Optional
 from dataclasses import dataclass
@@ -156,7 +156,7 @@ class MatchingModel(pl.LightningModule):
 
 
         self.save_hyperparameters()
-        print(self.hparams)
+        # print(self.hparams)
     
     def forward(self,
                 data: HetData,
@@ -686,22 +686,22 @@ class MatchingModel(pl.LightningModule):
                 precision, recall \
                     = (all_metrics[k][:, i] for i in range(NUM_METRICS))
             
-            fig_all = plot_the_fives(true_pos, true_neg, missed, incorrect, false_pos,
-                                     self.thresholds, f"Metrics vs. Threshold ({kinds})")
+            # fig_all = plot_the_fives(true_pos, true_neg, missed, incorrect, false_pos,
+            #                          self.thresholds, f"Metrics vs. Threshold ({kinds})")
         
-            fig_precrecall_flat = plot_multiple_metrics({
-                'precision': precision,
-                'recall': recall
-            }, self.thresholds, f"Precision & Recall vs. Threshold ({kinds})")
+            # fig_precrecall_flat = plot_multiple_metrics({
+            #     'precision': precision,
+            #     'recall': recall
+            # }, self.thresholds, f"Precision & Recall vs. Threshold ({kinds})")
 
-            label_indices = [0, len(self.thresholds) // 2, -1]
-            fig_precision_recall = plot_tradeoff(
-                recall, precision, self.thresholds, label_indices,
-                'Recall', 'Precision', f" ({kinds})")
+            # label_indices = [0, len(self.thresholds) // 2, -1]
+            # fig_precision_recall = plot_tradeoff(
+            #     recall, precision, self.thresholds, label_indices,
+            #     'Recall', 'Precision', f" ({kinds})")
 
-            self.logger.experiment.add_figure(f'{prefix}_metric_v_thresh/{kinds}', fig_all, self.current_epoch)
-            self.logger.experiment.add_figure(f'{prefix}_precision_recall_v_thresh/{kinds}', fig_precrecall_flat, self.current_epoch)
-            self.logger.experiment.add_figure(f'{prefix}_precision_v_recall/{kinds}', fig_precision_recall, self.current_epoch)
+            # self.logger.experiment.add_figure(f'{prefix}_metric_v_thresh/{kinds}', fig_all, self.current_epoch)
+            # self.logger.experiment.add_figure(f'{prefix}_precision_recall_v_thresh/{kinds}', fig_precrecall_flat, self.current_epoch)
+            # self.logger.experiment.add_figure(f'{prefix}_precision_v_recall/{kinds}', fig_precision_recall, self.current_epoch)
         
         if save:
             entries = []

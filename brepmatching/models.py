@@ -1,5 +1,5 @@
 import torch
-from automate import SBGCN
+from automate.automate import SBGCN
 from torch.nn import BatchNorm1d
 from torch_geometric.nn import GeneralConv
 
@@ -93,7 +93,7 @@ class PairEmbedder(torch.nn.Module):
                     face_match_types = torch.cat([face_match_types, torch.full((batch[fmt % "faces"].shape[1],), n_types, device=device)])
                     edge_match_types = torch.cat([edge_match_types, torch.full((batch[fmt % "edges"].shape[1],), n_types + 1, device=device)])
                     
-                    if fmt % "vertices" in batch.keys: # There are no vertex overlaps
+                    if fmt % "vertices" in batch.keys(): # There are no vertex overlaps
                         vert_matches = torch.cat([vert_matches, batch[fmt % "vertices"]], dim=1)
                         vert_match_types = torch.cat([vert_match_types, torch.full((batch[fmt % "vertices"].shape[1],), n_types + 2, device=device)])
                         n_types += 1

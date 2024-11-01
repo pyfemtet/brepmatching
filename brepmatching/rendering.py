@@ -17,7 +17,7 @@ from matplotlib.patches import Patch
 
 import json
 from zipfile import ZipFile
-from automate import Part, PartOptions
+from automate.automate import Part, PartOptions
 from tqdm import tqdm
 
 CameraParams = namedtuple('CameraParams', ['pose','mag'])

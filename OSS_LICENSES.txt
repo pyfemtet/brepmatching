@@ -1,0 +1,31 @@
+This library depends on or is derived from the
+following softwares. If you want to use the features
+of this library, you must also follow the
+library licenses.
+
+
+# breploader, cm_lib, sa_lib, ps_session
+Femtet License
+This library depends on the extension libraries of Femtet.
+These features requires a valid Femtet license.
+Further information, see <femtet_exe_dir>/lib/LICENSE.txt
+
+
+# coincidence_matching, set_attributes, brepmatching
+MIT License
+https://github.com/deGravity/brepmatching
+Part of this library is derived from brepmatching (by deGravity).
+
+
+# automate
+MIT License
+https://github.com/deGravity/automate
+Part of this library is derived from automate (by deGravity).
+
+
+# Eigen3
+MPL2 License
+license: https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.MPL2?ref_type=heads
+source: https://gitlab.com/libeigen/eigen/-/blob/master/
+documentation: https://eigen.tuxfamily.org/index.php
+This library includes an unmodified version of Eigen3 (3.4.0).

@@ -1,11 +1,33 @@
-#!/usr/bin/env python
-
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext as build_ext_orig
 import os
+import sys
 import pathlib
+from pathlib import Path
+import pybind11
+from femtetutils import util
+
+
+# read .debug if exists
+debug_file_path = Path(__file__).parent / '.debug'
+if os.path.exists(debug_file_path):
+    with open(debug_file_path, 'r') as f:
+        femtet_dir_path = f.read()
+
+else:
+    # get Femtet root dir
+    femtet_exe_path = util.get_femtet_exe_path()
+    femtet_dir_path = os.path.dirname(femtet_exe_path)
+
+# If lib is not built, cannot use brepmatching.
+if not os.path.exists(os.path.join(femtet_dir_path, 'lib')):
+    raise FileNotFoundError('Femtet >= 2025.0.0 required. '
+                            'Your Femtet (with macros enabled) '
+                            'appears to be less than 2025.0.0.')
+
 
 ## From https://stackoverflow.com/questions/42585210/extending-setuptools-extension-to-use-cmake-in-setup-py ##
+
 class CMakeExtension(Extension):
 
     def __init__(self, name):
@@ -32,9 +54,16 @@ class build_ext(build_ext_orig):
 
         # example of cmake args
         config = 'Debug' if self.debug else 'Release'
+        pybind11_dir = str(pathlib.Path(pybind11.__file__).parent/'share'/'cmake'/'pybind11').replace('\\', '/')
+        python_executable = sys.executable.replace('\\', '/')
+        femtet_lib_dir = f'{femtet_dir_path}/lib'.replace('\\', '/')
         cmake_args = [
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_%s=%s' % (config.upper(), str(extdir.parent.absolute())),
-            '-DCMAKE_BUILD_TYPE=%s' % config
+            '-DCMAKE_BUILD_TYPE=%s' % config,
+            '-DCMAKE_BUILD_TYPE=%s' % config,
+            f'-DPYTHON_EXECUTABLE={python_executable}',  # Python パスが空白を含んでも動作する
+            f'-Dpybind11_DIR={pybind11_dir}',  # 隔離環境にあるので空白は入らなし、入っても動作する
+            f'-DFEMTET_LIB_DIR={femtet_lib_dir}',
         ]
 
         # example of build args
@@ -53,15 +82,26 @@ class build_ext(build_ext_orig):
 ## End from https://stackoverflow.com/questions/42585210/extending-setuptools-extension-to-use-cmake-in-setup-py ##
 
 
-setup(name='brepmatching',
-    version='0.0.1',
+setup(
+    name='brepmatching',
+    version='0.1.0',
     description='Learning to match BRep Topology',
-    author='Ben Jones',
-    author_email='benjones@cs.washington.edu',
+    author='Kazuma NAITO',
+    author_email='kazuma.naito@murata.com',
     license='MIT',
-    ext_modules=[CMakeExtension('coincidence_matching')],
+    ext_modules=[
+        CMakeExtension('coincidence_matching'),
+        CMakeExtension('set_attributes'),
+        CMakeExtension('automate_cpp'),
+    ],
     cmdclass={
         'build_ext': build_ext
     },
-    packages=find_packages()
+    packages=find_packages(),
+    package_data={
+        'brepmatching': [
+            'pyfemtet_scripts/data/dataset_to_predict/dataset/data/VariationData/*.csv',
+            'pyfemtet_scripts/*.ckpt',
+        ]
+    }
 )

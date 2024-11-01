@@ -6,13 +6,14 @@ import numpy as np
 import pandas as pd
 import torch
 import xxhash
-from automate import Part, PartFeatures, PartOptions, part_to_graph
+from automate.automate import Part, PartFeatures, PartOptions, part_to_graph
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 from .utils import zip_hetdata, make_containing_dir, fix_file_descriptors
 import pytorch_lightning as pl
 from torch_geometric.loader import DataLoader
+from brepmatching.utils import unzip_hetdata
 
 from coincidence_matching import match_parts, match_parts_dict, get_export_id_types
 from .transforms import *
@@ -20,10 +21,11 @@ import warnings
 
 def normalize_pair(
     orig_part: Part,
-    orig_part_data: str,
+    orig_part_path: str,
     var_part: Part,
-    var_part_data: str,
-    options: PartFeatures
+    var_part_path: str,
+    options: PartFeatures,
+    hWnd=-1,
 ):
     orig_bb = orig_part.summary.bounding_box
     var_bb = var_part.summary.bounding_box
@@ -46,8 +48,8 @@ def normalize_pair(
     options.transform = True
     options.transform_matrix = xfrm
 
-    orig_part_xfrmed = Part(orig_part_data, options)
-    var_part_xfrmed = Part(var_part_data, options)
+    orig_part_xfrmed = Part(orig_part_path, options, hWnd)
+    var_part_xfrmed = Part(var_part_path, options, hWnd)
 
     if not (orig_part_xfrmed.is_valid and var_part_xfrmed.is_valid):
         return None, None, 'bad_transform'
@@ -89,7 +91,9 @@ def make_match_data(
     return_reason = False, 
     normalize=False, 
     use_mesh_quality=False, 
-    mesh_quality=0.01
+    mesh_quality=0.01,
+    export_id_map=False,
+    hWnd=-1,
 ):
     has_baseline_data = False
     if orig_path not in zf.namelist() or var_path not in zf.namelist() or match_path not in zf.namelist():
@@ -109,21 +113,23 @@ def make_match_data(
     with zf.open(match_path,'r') as f:
         matches = json.load(f)
     with zf.open(orig_path, 'r') as f:
-        orig_part_data = f.read().decode('utf-8')
-        orig_part = Part(orig_part_data, options)
+        # path is now txt file that contains path to .x_t
+        orig_part_path = f.read().decode('utf-8')
+        orig_part = Part(orig_part_path, options, hWnd)
     if not orig_part.is_valid:
         if return_reason:
             return None, 'orig_invalid'
         return None
     with zf.open(var_path, 'r') as f:
-        var_part_data = f.read().decode('utf-8')
-        var_part = Part(var_part_data, options)
+        # path is now txt file that contains path to .x_t
+        var_part_path = f.read().decode('utf-8')
+        var_part = Part(var_part_path, options, hWnd)
     if not var_part.is_valid:
         if return_reason:
             return None, 'var_invalid'
         return None
     if normalize:
-        orig_part, var_part, reason = normalize_pair(orig_part, orig_part_data, var_part, var_part_data, options)
+        orig_part, var_part, reason = normalize_pair(orig_part, orig_part_path, var_part, var_part_path, options, hWnd)
         if reason != 'ok':
             return None, reason
     features = PartFeatures()
@@ -150,7 +156,7 @@ def make_match_data(
     var_edge_map = index_dict(var_brep.edge_export_ids)
     var_vert_map = index_dict(var_brep.vertex_export_ids)
 
-    orig_id_types = get_export_id_types(orig_part_data)
+    orig_id_types = get_export_id_types(orig_part_path, hWnd)
 
     # Setup Ground Truth Matches
     face_matches, edge_matches, vert_matches = make_match_tensors(
@@ -174,7 +180,29 @@ def make_match_data(
     data.__edge_sets__['vertices_matches'] = ['left_vertices', 'right_vertices']
 
     # Setup Baseline Matching
-    baseline_matching = match_parts(orig_part_data, var_part_data, False)
+
+    # # match_parts crashes with certain .x_t files.
+    # # As a workaround, pass orig_part_data and var_part_data via subprocess, and skip the data if the return code is not 0.
+    # # reason:
+    # #   The return value of match_parts cannot be pickled
+    # #   If you run it in a different thread, the main process crashes.
+    # import os
+    # import sys
+    # from subprocess import run
+    # zip_path = os.path.abspath(zf.filename)
+    # ret = run(
+    #     [
+    #         sys.executable,
+    #         os.path.join(os.path.dirname(__file__), '_match_parts_butlers_bite.py'),
+    #         zip_path,
+    #         orig_path,
+    #         var_path
+    #     ]
+    # )
+    # if ret.returncode != 0:
+    #     raise RuntimeError('The parasolid crashes match_part().  # coincident_matching')
+
+    baseline_matching = match_parts(orig_part_path, var_part_path, False, hWnd)
     bl_exact_face_matches = []
     bl_exact_edge_matches = []
     bl_exact_vert_matches = []
@@ -221,6 +249,46 @@ def make_match_data(
     data.bl_overlap_smaller_edge_percentages = torch.tensor(baseline_matching.smaller_edge_overlap_percentages)
     data.__node_sets__.add('bl_overlap_smaller_edge_percentages')
 
+    # orig_face_map: dict(hash->index of hash)
+    # orig_brep.face_export_ids: hash list
+    # [f.export_id for f in orig_part.brep.nodes.faces]: id list
+
+    # for k in orig_brep.face_export_ids:
+    #     print(k)
+    #     print(orig_face_map[int(k)])
+
+    ret_orig = {}
+    ret_orig.update(
+        {'f': {orig_face_map[int(k)]: v for k, v in
+               zip(orig_brep.face_export_ids, [f.export_id for f in orig_part.brep.nodes.faces])}}
+    )
+    # ret.update(
+    #     {k: v for k, v in zip(orig_brep.loop_export_ids, [l.export_id for l in orig_part.brep.nodes.loops])}
+    # )
+    ret_orig.update(
+        {'e': {orig_edge_map[int(k)]: v for k, v in
+               zip(orig_brep.edge_export_ids, [e.export_id for e in orig_part.brep.nodes.edges])}}
+    )
+    ret_orig.update(
+        {'v': {orig_vert_map[int(k)]: v for k, v in
+               zip(orig_brep.vertex_export_ids, [v.export_id for v in orig_part.brep.nodes.vertices])}}
+    )
+
+    ret_var = {}
+    ret_var.update(
+        {'f': {var_face_map[int(k)]: v for k, v in
+               zip(var_brep.face_export_ids, [f.export_id for f in var_part.brep.nodes.faces])}}
+    )
+    ret_var.update(
+        {'e': {var_edge_map[int(k)]: v for k, v in
+               zip(var_brep.edge_export_ids, [e.export_id for e in var_part.brep.nodes.edges])}}
+    )
+    ret_var.update(
+        {'v': {var_vert_map[int(k)]: v for k, v in
+               zip(var_brep.vertex_export_ids, [v.export_id for v in var_part.brep.nodes.vertices])}}
+    )
+    ret = [ret_orig, ret_var]
+
     # Setup Onshape Baseline
     if bl_m_path is None or bl_o_path is None or bl_v_path is None or not has_baseline_data or skip_onshape_baseline:
         
@@ -232,9 +300,12 @@ def make_match_data(
         data.__edge_sets__['os_bl_vertices_matches'] = ['left_vertices', 'right_vertices']
         data.n_onshape_baseline_unmatched = torch.tensor([0]).long()
         data.has_onshape_baseline = torch.tensor([False]).bool()
+
+        if export_id_map:
+            return data, ret
         if return_reason:
             return data, 'ok'
-        return data # Stop now if we don't have baselines in the dataset
+        return data  # Stop now if we don't have baselines in the dataset
 
     with zf.open(bl_m_path,'r') as f:
         bl_matches = json.load(f)
@@ -245,9 +316,9 @@ def make_match_data(
     # history to base the ids on). Re-map these back to the original variation
     # that the ground-truth matching is based on by running exact matching
     # (the two parts should match perfectly).
-    var_rename = match_parts_dict(bl_var_part_data, var_part_data, True)
-    var_types = get_export_id_types(bl_var_part_data)
-    orig_var_types = get_export_id_types(var_part_data)
+    var_rename = match_parts_dict(bl_var_part_data, var_part_data, True, hWnd)
+    var_types = get_export_id_types(bl_var_part_data, hWnd)
+    orig_var_types = get_export_id_types(var_part_data, hWnd)
     num_onshape_baseline_unmatched = 0
     renamed_matches = {}
     for k,match in bl_matches.items():
@@ -344,7 +415,7 @@ class ParallelPreprocessor(torch.utils.data.Dataset):
             )
         
         dataset = []
-        for d in tqdm(loader): # Turn of multiprocessing for now since it was crashing
+        for d in tqdm(loader):  # Turn of multiprocessing for now since it was crashing
             dataset.append(d)
 
         torch.save(dataset, cache_path)
@@ -441,7 +512,7 @@ class ParallelPreprocessor(torch.utils.data.Dataset):
             'reason': reason
         }
 
-def load_data(zip_path=None, cache_path=None):
+def load_data(zip_path=None, cache_path=None, export_id_map=False, hWnd=-1):
     if cache_path is not None:
         if os.path.exists(cache_path):
             return torch.load(cache_path)
@@ -460,7 +531,9 @@ def load_data(zip_path=None, cache_path=None):
         orig_id_dict = dict((k,v) for v,k in enumerate(variations.ps_orig.unique()))
         group = []
         original_index = []
-        for i in tqdm(range(len(variations)), "Preprocessing Data"):
+
+        # for i in tqdm(range(len(variations)), "Preprocessing Data"):
+        for i in range(len(variations)):
             variation_record = variations.iloc[i]
             variation_index = variations.index[i]
 
@@ -481,7 +554,47 @@ def load_data(zip_path=None, cache_path=None):
 
                 skip_onshape_baseline = variation_record.translationFail == 1
 
-            data = make_match_data(zf, o_path, v_path, m_path, bl_o_path, bl_v_path, bl_m_path, skip_onshape_baseline=skip_onshape_baseline)
+            id_map = None
+            if export_id_map:
+                data, id_map = make_match_data(
+                    zf,
+                    o_path,
+                    v_path,
+                    m_path,
+                    bl_o_path,
+                    bl_v_path,
+                    bl_m_path,
+                    skip_onshape_baseline=skip_onshape_baseline,
+                    export_id_map=export_id_map,
+                    hWnd=hWnd,
+                )
+            else:
+                data = make_match_data(
+                    zf,
+                    o_path,
+                    v_path,
+                    m_path,
+                    bl_o_path,
+                    bl_v_path,
+                    bl_m_path,
+                    skip_onshape_baseline=skip_onshape_baseline,
+                    export_id_map=export_id_map,
+                    hWnd=hWnd,
+                )
+
+            # If invalid batch data is generated, the data will be skipped.
+            if data is not None:
+                orig_batch, var_batch = unzip_hetdata(data)
+                if (
+                    len(orig_batch.faces) == 0
+                    or len(orig_batch.edges) == 0
+                    or len(orig_batch.vertices) == 0
+                    or len(var_batch.faces) == 0
+                    or len(var_batch.edges) == 0
+                    or len(var_batch.vertices) == 0
+                ):
+                    data = None
+
             if data is not None:
                 group.append(orig_id_dict[variation_record.ps_orig])
                 preprocessed_data.append(data)
@@ -495,12 +608,16 @@ def load_data(zip_path=None, cache_path=None):
     if cache_path is not None:
         os.makedirs(os.path.dirname(cache_path),exist_ok=True)
         torch.save(cached_data, cache_path)
-    return cached_data
+
+    if export_id_map:
+        return cached_data, id_map
+    else:
+        return cached_data
 
 
 follow_batch=['left_vertices','right_vertices','left_edges', 'right_edges','left_faces','right_faces', 'faces_matches', 'edges_matches', 'vertices_matches']
 class BRepMatchingDataset(torch.utils.data.Dataset):
-    def __init__(self, cached_data, debug=False, mode='train', seed=42, test_size=0.1, val_size=0.1, test_identity=False, transforms=None, require_onshape_matchings=True, enable_blacklist=True):
+    def __init__(self, cached_data, debug=False, mode='train', seed=42, test_size=0.1, val_size=0.1, test_identity=False, transforms=None, require_onshape_matchings=False, enable_blacklist=True):
         self.debug = debug
         self.transforms = compose(*transforms[::-1]) if transforms else None
 
@@ -559,7 +676,7 @@ class BRepMatchingDataset(torch.utils.data.Dataset):
             edge_matches = torch.stack([torch.arange(n_edges).long(), torch.arange(n_edges).long()]) if n_edges > 0 else torch.empty((2,0)).long()
             vert_matches = torch.stack([torch.arange(n_verts).long(), torch.arange(n_verts).long()]) if n_verts > 0 else torch.empty((2,0)).long()
 
-            for k in data.keys:
+            for k in data.keys():
                 if k.startswith('left'):
                     data[f'right{k[4:]}'] = data[k]
 
@@ -614,16 +731,32 @@ class BRepMatchingDataModule(pl.LightningDataModule):
         self.test_batch_size = self.val_batch_size if test_batch_size is None else test_batch_size
         self.enable_blacklist = enable_blacklist
 
-        print("train_batch_size", self.batch_size, "val_batch_size", self.val_batch_size, "test_batch_size", self.test_batch_size)
+        # print("train_batch_size", self.batch_size, "val_batch_size", self.val_batch_size, "test_batch_size", self.test_batch_size)
 
         self.prepare_data_per_node = False #workaround to seeming bug in lightning
 
-    def setup(self, **kwargs):
+    def setup(self, export_id_map=False, hWnd=-1, **kwargs):
         super().__init__()
         transforms = []
         if self.exact_match_labels:
             transforms.append(use_bl_exact_match_labels)
-        cached_data = load_data(zip_path=self.zip_path, cache_path=self.cache_path)
+
+        id_map = None
+        if export_id_map:
+            cached_data, id_map = load_data(
+                zip_path=self.zip_path,
+                cache_path=self.cache_path,
+                export_id_map=True,
+                hWnd=hWnd,
+            )
+        else:
+            cached_data = load_data(
+                zip_path=self.zip_path,
+                cache_path=self.cache_path,
+                export_id_map=False,
+                hWnd=hWnd,
+            )
+
         self.train_ds = BRepMatchingDataset(cached_data=cached_data, debug=self.debug, seed = self.seed, test_size = self.test_size, val_size = self.val_size, mode='train', test_identity=self.test_identity, transforms=transforms, enable_blacklist=self.enable_blacklist)
         if self.single_set:
             self.test_ds = self.train_ds
@@ -631,6 +764,9 @@ class BRepMatchingDataModule(pl.LightningDataModule):
         else:
             self.test_ds = BRepMatchingDataset(cached_data=cached_data, debug=self.debug, seed = self.seed, test_size = self.test_size, val_size = self.val_size, mode='test', test_identity=self.test_identity, transforms=transforms, enable_blacklist=self.enable_blacklist)
             self.val_ds = BRepMatchingDataset(cached_data=cached_data, debug=self.debug, seed = self.seed, test_size = self.test_size, val_size = self.val_size, mode='val', test_identity=self.test_identity, transforms=transforms, enable_blacklist=self.enable_blacklist)
+
+        if export_id_map:
+            return id_map
 
     def train_dataloader(self):
         return DataLoader(self.train_ds, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=self.shuffle, persistent_workers=self.persistent_workers, follow_batch=follow_batch)
@@ -642,6 +778,10 @@ class BRepMatchingDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         # TODO: fix this thing
         return DataLoader(self.test_ds, batch_size=self.test_batch_size, num_workers=self.num_workers,shuffle=False, persistent_workers=self.persistent_workers, follow_batch=follow_batch)
+
+    def predict_dataloader(self):
+        # TODO: fix this thing
+        return self.train_dataloader()
 
 
 def make_filter(cache, face_thresh = 1000, edge_thresh = 1000, vert_thresh = 1000, ignore_origins = False):

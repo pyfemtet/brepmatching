@@ -1,8 +1,8 @@
 from contextlib import contextmanager
-from automate import HetData
+from automate.automate import HetData
 from torch import is_tensor
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
+# from matplotlib.figure import Figure
+# import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from typing import Optional
@@ -19,7 +19,7 @@ TOPO_KINDS: list[tuple[str, str, str]] = [
 
 
 def zip_hetdata(left, right):
-    common_keys = set(left.keys).intersection(right.keys)
+    common_keys = set(left.keys()).intersection(right.keys())
     data = HetData()
     for k in common_keys:
         # A bit of a hack to remove non-batchable items
@@ -39,8 +39,8 @@ def zip_hetdata(left, right):
     return data
 
 def unzip_hetdata(data):
-    left_keys = [k for k in data.keys if k.startswith('left_')]
-    right_keys = [k for k in data.keys if k.startswith('right_')]
+    left_keys = [k for k in data.keys() if k.startswith('left_')]
+    right_keys = [k for k in data.keys() if k.startswith('right_')]
     left = HetData()
     right = HetData()
     for k in left_keys:
@@ -447,84 +447,84 @@ def compute_metrics_from_matches(data: HetData, kinds: str, matches: torch.Tenso
 
     return metrics
 
-###### PLOTTING ######
+# ###### PLOTTING ######
 
-def plot_metric(metric, thresholds, name):
-    fig = Figure(figsize=(8, 8))
-    ax = fig.add_subplot()
-    ax.plot(thresholds, metric)
-    ax.set_title(name + ' vs threshold')
-    ax.set_xlabel('Threshold')
-    ax.set_ylabel(name)
-    ax.set_ylim(-0.1, 1.1)
-    ax.grid()
-    return fig
+# def plot_metric(metric, thresholds, name):
+#     fig = Figure(figsize=(8, 8))
+#     ax = fig.add_subplot()
+#     ax.plot(thresholds, metric)
+#     ax.set_title(name + ' vs threshold')
+#     ax.set_xlabel('Threshold')
+#     ax.set_ylabel(name)
+#     ax.set_ylim(-0.1, 1.1)
+#     ax.grid()
+#     return fig
 
-def plot_the_fives(true_pos: np.ndarray,
-                   true_neg: np.ndarray,
-                   missed: np.ndarray,
-                   incorrect: np.ndarray,
-                   false_pos: np.ndarray,
-                   thresholds: np.ndarray,
-                   title: str,
-                   ax: plt.Axes = None) -> Figure:
-    fig = None
-    if ax is None:
-        fig = Figure(figsize=(8, 8))
-        ax = fig.add_subplot()
-    ax.stackplot(thresholds, false_pos, incorrect, missed, true_neg, true_pos,
-                 labels=["False Positive", "Incorrect", "Missed", "True Negative", "True Positive"],
-                 colors=["#BA5050", "#D4756C", "#D6CFB8", "#61B5CF", "#468CB8"])
-    ax.legend(loc="upper left")
-    ax.set_xlabel("Threshold")
-    ax.set_title(title)
-    ax.set_ylim(-0.1, 1.1)
-    ax.grid()
+# def plot_the_fives(true_pos: np.ndarray,
+#                    true_neg: np.ndarray,
+#                    missed: np.ndarray,
+#                    incorrect: np.ndarray,
+#                    false_pos: np.ndarray,
+#                    thresholds: np.ndarray,
+#                    title: str,
+#                    ax: plt.Axes = None) -> Figure:
+#     fig = None
+#     if ax is None:
+#         fig = Figure(figsize=(8, 8))
+#         ax = fig.add_subplot()
+#     ax.stackplot(thresholds, false_pos, incorrect, missed, true_neg, true_pos,
+#                  labels=["False Positive", "Incorrect", "Missed", "True Negative", "True Positive"],
+#                  colors=["#BA5050", "#D4756C", "#D6CFB8", "#61B5CF", "#468CB8"])
+#     ax.legend(loc="upper left")
+#     ax.set_xlabel("Threshold")
+#     ax.set_title(title)
+#     ax.set_ylim(-0.1, 1.1)
+#     ax.grid()
     
-    return fig
+#     return fig
     
     
-def plot_multiple_metrics(metrics: dict[str, np.ndarray], 
-                          thresholds: np.ndarray,
-                          title: str):
-    fig = Figure(figsize=(8, 8))
-    ax = fig.add_subplot()
-    for j, key in enumerate(metrics):
-        if j == 0:
-            color = '#0000ff'
-        elif j == 1:
-            color = '#e08c24'
-        elif j == 2:
-            color = '#ff0000'
-        else:
-            color = None
-        ax.plot(thresholds, metrics[key], label=key, color=color)
-    ax.legend()
-    ax.set_xlabel('Threshold')
-    ax.set_title(title)
-    ax.set_ylim(-0.1, 1.1)
-    ax.grid()
-    return fig
+# def plot_multiple_metrics(metrics: dict[str, np.ndarray], 
+#                           thresholds: np.ndarray,
+#                           title: str):
+#     fig = Figure(figsize=(8, 8))
+#     ax = fig.add_subplot()
+#     for j, key in enumerate(metrics):
+#         if j == 0:
+#             color = '#0000ff'
+#         elif j == 1:
+#             color = '#e08c24'
+#         elif j == 2:
+#             color = '#ff0000'
+#         else:
+#             color = None
+#         ax.plot(thresholds, metrics[key], label=key, color=color)
+#     ax.legend()
+#     ax.set_xlabel('Threshold')
+#     ax.set_title(title)
+#     ax.set_ylim(-0.1, 1.1)
+#     ax.grid()
+#     return fig
 
-def plot_tradeoff(x, y, values, indices, xname, yname, suffix=''):
-    fig = Figure(figsize=(8, 8))
-    ax = fig.add_subplot()
-    ax.plot(x, y)
+# def plot_tradeoff(x, y, values, indices, xname, yname, suffix=''):
+#     fig = Figure(figsize=(8, 8))
+#     ax = fig.add_subplot()
+#     ax.plot(x, y)
 
-    x_filtered = [x[i] for i in indices]
-    y_filtered = [y[i] for i in indices]
-    v_filtered = [values[i] for i in indices]
-    ax.scatter(x_filtered, y_filtered)
-    for xf, yf, vf in zip(x_filtered, y_filtered, v_filtered):
-        ax.annotate(str(round(vf,2)), (xf, yf))
+#     x_filtered = [x[i] for i in indices]
+#     y_filtered = [y[i] for i in indices]
+#     v_filtered = [values[i] for i in indices]
+#     ax.scatter(x_filtered, y_filtered)
+#     for xf, yf, vf in zip(x_filtered, y_filtered, v_filtered):
+#         ax.annotate(str(round(vf,2)), (xf, yf))
 
-    ax.set_title(yname + ' VS ' + xname + suffix)
-    ax.set_xlabel(xname)
-    ax.set_ylabel(yname)
-    ax.set_xlim(-0.1, 1.1)
-    ax.set_ylim(-0.1, 1.1)
-    ax.grid()
-    return fig
+#     ax.set_title(yname + ' VS ' + xname + suffix)
+#     ax.set_xlabel(xname)
+#     ax.set_ylabel(yname)
+#     ax.set_xlim(-0.1, 1.1)
+#     ax.set_ylim(-0.1, 1.1)
+#     ax.grid()
+#     return fig
 
 class Running_avg:
     def __init__(self, dim):
