@@ -1,0 +1,23 @@
+# python version constraint is generally handled by the environment, so it's not included here
+
+torch             >=2.3.0, <2.4.0
+torch-geometric   >=2.6.1, <2.7.0
+pytorch-lightning >=1.9.0, <1.10.0
+
+numpy  >=1.26.2, <2.0.0
+pandas >=2.1.3,  <3.0.0
+scipy  >=1.11.4, <2.0.0
+
+scikit-learn >= 1.5.2, <2.0.0
+
+tqdm   >=4.66.5, <5.0.0
+dotmap >=1.3.30, <2.0.0
+xxhash >=3.5.0,  <4.0.0
+parse  >=1.20.2, <2.0.0
+
+cmake            >=3.30.5, <4.0.0
+pybind11[global] >=2.13.6, <3.0.0
+setuptools       >=75.2.0, <76.0.0
+femtetutils      >=1.0.0
+
+pywin32

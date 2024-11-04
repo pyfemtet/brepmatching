@@ -1,9 +1,11 @@
+# このファイルは開発環境 poetry でしか使わない。
+
 [tool.poetry]
 name = "brepmatching"
-version = "0.1.0"  # setup.py が優先される
+version = "0.0.0"  # setup.py が優先される
 description = "originated by https://github.com/deGravity/brepmatching"
 authors = ["Kazuma NAITO <kazuma.naito@murata.com>"]
-license = "BSD-2-Clause"
+license = "MIT"
 readme = "README.md"
 
 
@@ -36,6 +38,15 @@ femtetutils = "^1.0.0"
 
 # Femtet
 pywin32 = "^306"
+
+# distribution
+[tool.poetry.group.dev.dependencies]
+wheel = "^0.44.0"
+twine = "^5.1.1"
+
+
+[tool.poetry.build]
+script = "setup_install.py"
 
 
 [build-system]

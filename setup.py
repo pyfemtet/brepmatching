@@ -8,22 +8,38 @@ import pybind11
 from femtetutils import util
 
 
-# read .debug if exists
-debug_file_path = Path(__file__).parent / '.debug'
-if os.path.exists(debug_file_path):
-    with open(debug_file_path, 'r') as f:
-        femtet_dir_path = f.read()
+def get_requirements(filename):
+    """Load requirements from a requirements file."""
+    ret = []
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            line = line.replace(' ', '').replace('\n', '')
+            line = line.split('#')[0]
+            if len(line) > 0:
+                ret.append(line)
+    return ret
 
-else:
-    # get Femtet root dir
-    femtet_exe_path = util.get_femtet_exe_path()
-    femtet_dir_path = os.path.dirname(femtet_exe_path)
 
-# If lib is not built, cannot use brepmatching.
-if not os.path.exists(os.path.join(femtet_dir_path, 'lib')):
-    raise FileNotFoundError('Femtet >= 2025.0.0 required. '
-                            'Your Femtet (with macros enabled) '
-                            'appears to be less than 2025.0.0.')
+def get_femtet_dir_path():
+    # read .debug if exists
+    debug_file_path = Path(__file__).parent / '.debug'
+    if os.path.exists(debug_file_path):
+        with open(debug_file_path, 'r') as f:
+            femtet_dir_path = f.read()
+
+    else:
+        # get Femtet root dir
+        femtet_exe_path = util.get_femtet_exe_path()
+        femtet_dir_path = os.path.dirname(femtet_exe_path)
+
+    # If lib is not built, cannot use brepmatching.
+    if not os.path.exists(os.path.join(femtet_dir_path, 'lib')):
+        raise FileNotFoundError('Femtet >= 2025.0.0 required. '
+                                'Your Femtet (with macros enabled) '
+                                'appears to be less than 2025.0.0.')
+
+    return femtet_dir_path
 
 
 ## From https://stackoverflow.com/questions/42585210/extending-setuptools-extension-to-use-cmake-in-setup-py ##
@@ -56,7 +72,7 @@ class build_ext(build_ext_orig):
         config = 'Debug' if self.debug else 'Release'
         pybind11_dir = str(pathlib.Path(pybind11.__file__).parent/'share'/'cmake'/'pybind11').replace('\\', '/')
         python_executable = sys.executable.replace('\\', '/')
-        femtet_lib_dir = f'{femtet_dir_path}/lib'.replace('\\', '/')
+        femtet_lib_dir = f'{get_femtet_dir_path()}/lib'.replace('\\', '/')
         cmake_args = [
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_%s=%s' % (config.upper(), str(extdir.parent.absolute())),
             '-DCMAKE_BUILD_TYPE=%s' % config,
@@ -84,7 +100,7 @@ class build_ext(build_ext_orig):
 
 setup(
     name='brepmatching',
-    version='0.1.0',
+    version='0.1.3',
     description='Learning to match BRep Topology',
     author='Kazuma NAITO',
     author_email='kazuma.naito@murata.com',
@@ -102,6 +118,14 @@ setup(
         'brepmatching': [
             'pyfemtet_scripts/data/dataset_to_predict/dataset/data/VariationData/*.csv',
             'pyfemtet_scripts/*.ckpt',
-        ]
-    }
+        ],
+        'automate': [
+            'cpp/*.cpp',
+            'cpp/*.h',
+            'include/Eigen/**',
+            'CMakeLists.txt',
+        ],
+    },
+    include_package_data=True,  # python package である brepmatching, automate 以外のファイルを配布物に含めるために MANIFEST.in を使います。
+    install_requires=get_requirements('requirements.txt'),
 )

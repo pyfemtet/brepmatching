@@ -17,3 +17,4 @@ dev_docs/
 brepmatching_on_site_package.lnk
 poetry.lock
 brepmatching - site packages.lnk
+dist/
