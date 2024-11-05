@@ -6,3 +6,4 @@ include coincidence_matching/bindings.cpp
 include coincidence_matching/CMakeLists.txt
 include set_attributes/bindings.cpp
 include set_attributes/CMakeLists.txt
+include set_attributes.pyi

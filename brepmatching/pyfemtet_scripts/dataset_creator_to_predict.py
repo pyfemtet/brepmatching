@@ -1,5 +1,6 @@
 import os
 import zipfile
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from concurrent.futures import ProcessPoolExecutor
 
@@ -13,18 +14,40 @@ def embed_bti_export_id(src_path, dst_path, hWnd):
     if not os.path.exists(src_path):
         raise FileNotFoundError(f'{src_path} is not found.')
 
+    # path を正規化します。
+    if isinstance(src_path, Path):
+        src_path = str(src_path.resolve())
+    src_path = src_path.replace('/', '\\')
+    if isinstance(dst_path, Path):
+        dst_path = str(dst_path.resolve()).replace('/', '\\')
+    dst_path = dst_path.replace('/', '\\')
+
+    # 上書きしたい場合、buf_path に出力してから src_path に上書きします。
     if src_path == dst_path:
-        # src_path を buf_path にコピーします。
+        # buf_path を作成します。
         buf_path = os.path.splitext(src_path)[0] + '_tmp.x_t'
+
+        # buf_path に出力します。
         if os.path.exists(buf_path):
             os.remove(buf_path)
-        shutil.copyfile(src_path, buf_path)
-        src_path = buf_path
+        sa.set_attributes_to_xt(src_path, buf_path, hWnd)
 
-    if os.path.exists(dst_path):
-        os.remove(dst_path)
+        # src_path のファイルを削除します。
+        if os.path.exists(src_path):
+            os.remove(src_path)
 
-    sa.set_attributes_to_xt(src_path, dst_path, hWnd)
+        # buf_path を src_path にリネームします。
+        os.rename(buf_path, src_path)
+
+        # buf_path のファイルを削除します。
+        if os.path.exists(buf_path):
+            os.remove(buf_path)
+
+    # 上書きしない場合
+    else:
+        if os.path.exists(dst_path):
+            os.remove(dst_path)
+        sa.set_attributes_to_xt(src_path, dst_path, hWnd)
 
 
 class DatasetCreatorToPredict(object):
