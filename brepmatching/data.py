@@ -145,9 +145,26 @@ def make_match_data(
 
     export_id_hash = lambda x: xxhash.xxh32(x).intdigest()
     match2tensor = lambda x: torch.tensor(x).long().T if len(x) > 0 else torch.empty((2,0)).long()
-    
 
-    index_dict = lambda x: dict((v.item(),k) for k,v in enumerate(x))
+    # index_dict = lambda x: dict((v.item(),k) for k,v in enumerate(x))
+    def index_dict(x):  # hashed tensor -> dict[hashed int, int]
+        out = dict()
+        for idx, tensor_int in enumerate(x):
+            if tensor_int.item() not in out:
+                out.update({tensor_int.item(): [idx]})
+            else:
+                existing_idx = out[tensor_int.item()]
+                # if isinstance(existing_idx, int):
+                #     value = [existing_idx, idx]
+                #     out.update({tensor_int: value})
+                if isinstance(existing_idx, list):
+                    value = existing_idx
+                    value.append(idx)
+                    out.update({tensor_int.item(): value})
+                else:
+                    raise Exception('予期しない型')
+        return out
+
     orig_face_map = index_dict(orig_brep.face_export_ids)
     orig_edge_map = index_dict(orig_brep.edge_export_ids)
     orig_vert_map = index_dict(orig_brep.vertex_export_ids)
@@ -220,7 +237,9 @@ def make_match_data(
             v_t_h = export_id_hash(v_t)
             assert(o_t_h in orig_map)
             assert(v_t_h in var_map)
-            out_list.append([orig_map[o_t_h], var_map[v_t_h]])
+            for org_t_idx in orig_map[o_t_h]:
+                for var_t_idx in var_map[v_t_h]:
+                    out_list.append([org_t_idx, var_t_idx])
 
     bl_exact_face_matches = match2tensor(bl_exact_face_matches)
     bl_exact_edge_matches = match2tensor(bl_exact_edge_matches)
@@ -258,35 +277,67 @@ def make_match_data(
     #     print(orig_face_map[int(k)])
 
     ret_orig = {}
-    ret_orig.update(
-        {'f': {orig_face_map[int(k)]: v for k, v in
-               zip(orig_brep.face_export_ids, [f.export_id for f in orig_part.brep.nodes.faces])}}
-    )
-    # ret.update(
-    #     {k: v for k, v in zip(orig_brep.loop_export_ids, [l.export_id for l in orig_part.brep.nodes.loops])}
-    # )
-    ret_orig.update(
-        {'e': {orig_edge_map[int(k)]: v for k, v in
-               zip(orig_brep.edge_export_ids, [e.export_id for e in orig_part.brep.nodes.edges])}}
-    )
-    ret_orig.update(
-        {'v': {orig_vert_map[int(k)]: v for k, v in
-               zip(orig_brep.vertex_export_ids, [v.export_id for v in orig_part.brep.nodes.vertices])}}
-    )
+
+    ret_orig_f = dict()
+    for hashed_tensor_int, bti_export_id in zip(orig_brep.face_export_ids, [f.export_id for f in orig_part.brep.nodes.faces]):
+        indices: list = orig_face_map[hashed_tensor_int.item()]
+        for k in indices:
+            ret_orig_f.update({k: bti_export_id})
+    ret_orig.update({'f': ret_orig_f})
+
+    ret_orig_e = dict()
+    for hashed_tensor_int, bti_export_id in zip(orig_brep.edge_export_ids, [e.export_id for e in orig_part.brep.nodes.edges]):
+        indices: list = orig_edge_map[hashed_tensor_int.item()]
+        for k in indices:
+            ret_orig_e.update({k: bti_export_id})
+    ret_orig.update({'e': ret_orig_e})
+
+    ret_orig_v = dict()
+    for hashed_tensor_int, bti_export_id in zip(orig_brep.vertex_export_ids, [v.export_id for v in orig_part.brep.nodes.vertices]):
+        indices: list = orig_vert_map[hashed_tensor_int.item()]
+        for k in indices:
+            ret_orig_v.update({k: bti_export_id})
+    ret_orig.update({'v': ret_orig_v})
+
 
     ret_var = {}
-    ret_var.update(
-        {'f': {var_face_map[int(k)]: v for k, v in
-               zip(var_brep.face_export_ids, [f.export_id for f in var_part.brep.nodes.faces])}}
-    )
-    ret_var.update(
-        {'e': {var_edge_map[int(k)]: v for k, v in
-               zip(var_brep.edge_export_ids, [e.export_id for e in var_part.brep.nodes.edges])}}
-    )
-    ret_var.update(
-        {'v': {var_vert_map[int(k)]: v for k, v in
-               zip(var_brep.vertex_export_ids, [v.export_id for v in var_part.brep.nodes.vertices])}}
-    )
+
+    ret_var_f = dict()
+    for hashed_tensor_int, bti_export_id in zip(var_brep.face_export_ids, [f.export_id for f in var_part.brep.nodes.faces]):
+        indices: list = var_face_map[hashed_tensor_int.item()]
+        for k in indices:
+            ret_var_f.update({k: bti_export_id})
+    ret_var.update({'f': ret_var_f})
+
+    ret_var_e = dict()
+    for hashed_tensor_int, bti_export_id in zip(var_brep.edge_export_ids, [e.export_id for e in var_part.brep.nodes.edges]):
+        indices: list = var_edge_map[hashed_tensor_int.item()]
+        for k in indices:
+            ret_var_e.update({k: bti_export_id})
+    ret_var.update({'e': ret_var_e})
+
+    ret_var_v = dict()
+    for hashed_tensor_int, bti_export_id in zip(var_brep.vertex_export_ids, [v.export_id for v in var_part.brep.nodes.vertices]):
+        indices: list = var_vert_map[hashed_tensor_int.item()]
+        for k in indices:
+            ret_var_v.update({k: bti_export_id})
+    ret_var.update({'v': ret_var_v})
+
+
+    # ret_var = {}
+    # ret_var.update(
+    #     {'f': {var_face_map[int(k)]: v for k, v in
+    #            zip(var_brep.face_export_ids, [f.export_id for f in var_part.brep.nodes.faces])}}
+    # )
+    # ret_var.update(
+    #     {'e': {var_edge_map[int(k)]: v for k, v in
+    #            zip(var_brep.edge_export_ids, [e.export_id for e in var_part.brep.nodes.edges])}}
+    # )
+    # ret_var.update(
+    #     {'v': {var_vert_map[int(k)]: v for k, v in
+    #            zip(var_brep.vertex_export_ids, [v.export_id for v in var_part.brep.nodes.vertices])}}
+    # )
+
     ret = [ret_orig, ret_var]
 
     # Setup Onshape Baseline
@@ -367,14 +418,32 @@ def make_match_tensors(matches, export_id_hash, match2tensor, orig_face_map, ori
     for orig_id, var_id in hashed_matches:
         if orig_id in orig_face_map:
             assert(var_id in var_face_map)
-            face_matches.append([orig_face_map[orig_id], var_face_map[var_id]])
+            # face_matches.append([orig_face_map[orig_id], var_face_map[var_id]])
+            orig_indices: list = orig_face_map[orig_id]
+            var_indices: list = var_face_map[var_id]
+            for orig_idx in orig_indices:
+                for var_idx in var_indices:
+                    face_matches.append([orig_idx, var_idx])
         elif orig_id in orig_edge_map:
             assert(var_id in var_edge_map)
-            edge_matches.append([orig_edge_map[orig_id], var_edge_map[var_id]])
+            # edge_matches.append([orig_edge_map[orig_id], var_edge_map[var_id]])
+            orig_indices: list = orig_edge_map[orig_id]
+            var_indices: list = var_edge_map[var_id]
+            for orig_idx in orig_indices:
+                for var_idx in var_indices:
+                    edge_matches.append([orig_idx, var_idx])
+
         elif orig_id in orig_vert_map:
             assert(var_id in var_vert_map)
-            vert_matches.append([orig_vert_map[orig_id], var_vert_map[var_id]])
+            # vert_matches.append([orig_vert_map[orig_id], var_vert_map[var_id]])
+            orig_indices: list = orig_vert_map[orig_id]
+            var_indices: list = var_vert_map[var_id]
+            for orig_idx in orig_indices:
+                for var_idx in var_indices:
+                    vert_matches.append([orig_idx, var_idx])
+
         else:
+            print(hashed_orig_classes[orig_id])
             if hashed_orig_classes[orig_id] in ['PK_CLASS_face', 'PK_CLASS_vertex','PK_CLASS_edge']:
                 assert(False)
 
