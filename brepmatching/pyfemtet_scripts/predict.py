@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore", ".*`max_epochs` was not set*")
 
 
 
-def predict_brepmatching(zip_path, hWnd) -> dict:
+def predict_brepmatching(zip_path, hWnd, threshold=0.7, with_image=False) -> dict:
 
     parser = ArgumentParser(allow_abbrev=False, conflict_handler='resolve')
 
@@ -151,7 +151,7 @@ def predict_brepmatching(zip_path, hWnd) -> dict:
     # do_iteration
     loss_tensor, hetdata_batch_after = model.do_iteration(
         hetdata_batch.clone(),
-        threshold := 0.7,  # 0.00001,  # threshold. by paper, 0.7.
+        threshold,  # threshold. by paper, 0.7.
         InitStrategy,
         False  # use adjacency or not.
     )
@@ -176,23 +176,23 @@ def predict_brepmatching(zip_path, hWnd) -> dict:
     # with open(os.path.join(os.path.dirname(__file__), 'predicted_id_matches.json'), 'w', encoding='utf-8') as f:
     #     json.dump(id_matches, f)
 
-    # # ===== rendering result =====
-    # from brepmatching.visualization import render_predictions, show_image
+    # ===== rendering result =====
+    if with_image:
+        from brepmatching.visualization import render_predictions, show_image
 
-    # im = show_image(
-    #     render_predictions(
-    #         hetdata_batch_after,
-    #         # face_match_preds=hetdata_batch_after.cur_faces_matches,
-    #         edge_match_preds=hetdata_batch_after.cur_edges_matches,
-    #         vertex_match_preds=hetdata_batch_after.cur_vertices_matches,
-    #     )
-    # )
-    # im.save(
-    #     os.path.join(
-    #         os.path.dirname(__file__),
-    #         f"predict_result(threshold_{threshold}).png"
-    #     )
-    # )
-    # console_logger.debug(f"predict_result(threshold_{threshold}).png was saved!")
+        im = show_image(
+            render_predictions(
+                hetdata_batch_after,
+                face_match_preds=hetdata_batch_after.cur_faces_matches,
+                edge_match_preds=hetdata_batch_after.cur_edges_matches,
+                vertex_match_preds=hetdata_batch_after.cur_vertices_matches,
+            )
+        )
+        im.save(
+            os.path.join(
+                os.path.dirname(__file__),
+                f"predict_result(threshold_{threshold}).png"
+            )
+        )
 
     return id_matches
