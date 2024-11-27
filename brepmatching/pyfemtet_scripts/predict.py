@@ -191,7 +191,8 @@ def predict_brepmatching(zip_path, hWnd, threshold=0.7, with_image=False) -> dic
         im.save(
             os.path.join(
                 os.path.dirname(__file__),
-                f"predict_result(threshold_{threshold}).png"
+                f"predict_result.png"
+                # f"predict_result(threshold_{threshold}).png"
             )
         )
 
