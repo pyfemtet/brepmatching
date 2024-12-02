@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore", ".*`max_epochs` was not set*")
 
 
 
-def predict_brepmatching(zip_path, hWnd, threshold=0.7, with_image=False) -> dict:
+def predict_brepmatching(zip_path, hWnd, threshold=0.7, image_path=None) -> dict:
 
     parser = ArgumentParser(allow_abbrev=False, conflict_handler='resolve')
 
@@ -177,7 +177,7 @@ def predict_brepmatching(zip_path, hWnd, threshold=0.7, with_image=False) -> dic
     #     json.dump(id_matches, f)
 
     # ===== rendering result =====
-    if with_image:
+    if image_path:
         from brepmatching.visualization import render_predictions, show_image
 
         im = show_image(
@@ -188,12 +188,6 @@ def predict_brepmatching(zip_path, hWnd, threshold=0.7, with_image=False) -> dic
                 vertex_match_preds=hetdata_batch_after.cur_vertices_matches,
             )
         )
-        im.save(
-            os.path.join(
-                os.path.dirname(__file__),
-                f"predict_result.png"
-                # f"predict_result(threshold_{threshold}).png"
-            )
-        )
+        im.save(image_path)
 
     return id_matches

@@ -10,7 +10,7 @@ class Predictor:
         self.zipper = DatasetCreatorToPredict(Femtet)
         self.Femtet = Femtet
 
-    def predict(self, xt_path1, xt_path2, threshold=0.7, _with_image=False) -> dict:
+    def predict(self, xt_path1, xt_path2, threshold=0.7, _image_path=None) -> dict:
         # create zip to temporary folder
         zip_path = self.zipper.create(xt_path1, xt_path2)
 
@@ -19,7 +19,7 @@ class Predictor:
             zip_path,
             self.Femtet.hWnd,
             threshold=threshold,
-            with_image=_with_image,
+            image_path=_image_path,
         )
 
     def __del__(self):

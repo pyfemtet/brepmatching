@@ -24,7 +24,7 @@ if __name__ == '__main__':
     logger.addHandler(handler)
 
 
-predictor = None
+predictor: Predictor = None
 
 
 class ModelUpdater:
@@ -34,6 +34,8 @@ class ModelUpdater:
             Femtet: CDispatch,
             rebuild_fun: callable,
             parasolid_version=None,
+            threshold=0.7,
+            _image_path=None,
     ):
         # ===== 前提条件の処理 =====
         logger.debug('入力を処理しています。')
@@ -156,8 +158,8 @@ class ModelUpdater:
         exp_id_map = predictor.predict(
             current_xt_path,
             var_xt_path,
-            threshold=0.7,
-            _with_image=True,
+            threshold=threshold,
+            _image_path=_image_path,
         )
 
         logger.debug(f'{current_xt_path=}')
