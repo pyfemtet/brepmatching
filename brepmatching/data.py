@@ -804,13 +804,13 @@ class BRepMatchingDataModule(pl.LightningDataModule):
 
         self.prepare_data_per_node = False #workaround to seeming bug in lightning
 
-    def setup(self, export_id_map=False, hWnd=-1, **kwargs):
+    def setup(self, export_id_map=False, hWnd=-1, **kwargs) -> None or list[dict[str, dict]]:
         super().__init__()
         transforms = []
         if self.exact_match_labels:
             transforms.append(use_bl_exact_match_labels)
 
-        id_map = None
+        id_map: None or list[dict[str, dict]] = None
         if export_id_map:
             cached_data, id_map = load_data(
                 zip_path=self.zip_path,

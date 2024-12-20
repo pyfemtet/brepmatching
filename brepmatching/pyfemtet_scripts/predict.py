@@ -1,138 +1,103 @@
-import json
 import os
 import pytorch_lightning as pl
-from argparse import ArgumentParser
 from brepmatching.matching_model import MatchingModel
-from pytorch_lightning.loggers import TensorBoardLogger
 from brepmatching.data import BRepMatchingDataModule
 from torch_geometric.loader import DataLoader
 import torch
-import parse
 from time import time
 
-# for type hint
 from brepmatching.matching_model import InitStrategy
 from brepmatching.data import BRepMatchingDataset
 
 import logging
+import warnings
+
 console_logger = logging.getLogger('BRepMatching')
-# logging.getLogger('lightning').setLevel(0)
-# pl.utilities.distributed.log.setLevel(logging.ERROR)
 logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
 
-import warnings
 warnings.filterwarnings("ignore", ".*`max_epochs` was not set*")
-
 
 
 def predict_brepmatching(zip_path, hWnd, threshold=0.7, image_path=None) -> dict:
 
-    parser = ArgumentParser(allow_abbrev=False, conflict_handler='resolve')
-
-    parser.add_argument('--tensorboard_path', type=str, default='.')
-    parser.add_argument('--checkpoint_path', type=str, default=None)
-    parser.add_argument('--name', type=str, default='unnamed')
-    parser.add_argument('--resume_version', type=int, default=None)
-    parser.add_argument('--best_checkpoint', type=str, default=None)
-    parser.add_argument('--seed', type=int, default=None)
-    parser.add_argument('--verbose', type=int, default=0)
-    parser.add_argument('--logger', action='store_false')
-    parser.add_argument('--no_train', action='store_true')
-    parser.add_argument('--no_test', action='store_true')
-    parser.add_argument('--validate', action='store_true')
-    parser.add_argument('--override_args', action='store_true')
-    parser.add_argument('--predict', action='store_true')
-
-    parser = pl.Trainer.add_argparse_args(parser)
-    parser = BRepMatchingDataModule.add_argparse_args(parser)
-    parser = MatchingModel.add_argparse_args(parser)
-
-    args = parser.parse_args()
-
-    # settings
-    args.zip_path = zip_path
-    args.num_workers = 0
-    args.persistent_workers = False
-    args.no_train = True
-    args.batch_size = 1
-    args.single_set = True
-    args.val_size = 0
-    args.test_size = 0
-    args.checkpoint_path = os.path.join(
+    checkpoint_path = os.path.join(
         os.path.dirname(__file__),
         'epoch=358-val_loss=0.005953.ckpt'
     )
 
-    # logger = TensorBoardLogger(
-    #     args.tensorboard_path,
-    #     name=args.name,
-    #     default_hp_metric=False,
-    #     version=args.resume_version
-    # )
-    # logger.log_hyperparams(args)
-
-    if args.resume_version is not None:
-        # last_ckpt = os.path.join(
-        #     logger.log_dir,
-        #     'checkpoints',
-        #     'last.ckpt'
-        # )
-        #
-        # if not os.path.exists(last_ckpt):
-        #     print(f'No last checkpoint found for version_{args.resume_version}.')
-        #     print(f'Tried {last_ckpt}')
-        #     exit()
-        # args.checkpoint_path = last_ckpt
-        # args.resume_from_checkpoint = last_ckpt
-        pass
-
-    elif args.best_checkpoint is not None:
-        all_checkpoints = os.listdir(args.best_checkpoint)
-        fmt = "epoch={}-val_loss={}.ckpt"
-        candidates = []
-        for ckpt in all_checkpoints:
-            a = parse.parse(fmt, ckpt)
-            if a is not None:
-                epoch, val_loss = a
-                candidates.append((float(val_loss), ckpt))
-        if len(candidates) == 0:
-            print(f"No checkpoints in {args.best_checkpoint}")
-            exit()
-        args.checkpoint_path = os.path.join(args.best_checkpoint,
-                                            min(candidates)[1])
-        console_logger.debug(f"Using checkpoint: {args.checkpoint_path}")
-
+    # DataModule
     console_logger.debug('===== data load start =====')
     start = time()
-    data = BRepMatchingDataModule.from_argparse_args(args)
+    data = BRepMatchingDataModule(
+        batch_size=1,
+        num_workers=0,
+        persistent_workers=False,
+        # shuffle: bool = True,
+        zip_path=zip_path,
+        # cache_path: str = None,
+        # debug_data: bool = False,
+        seed=None,  # or 42
+        test_size=0,
+        val_size=0,
+        single_set=True,
+        # test_identity: bool = False,
+        # exact_match_labels: bool = False,
+        # val_batch_size: int = None,
+        # test_batch_size: int = None,
+        # enable_blacklist: bool = True,
+    )
     console_logger.debug(f"===== data load ended with {int(time() - start)} sec. =====")
 
-    if args.checkpoint_path is None:
-        model = MatchingModel.from_argparse_args(args)
-    elif args.override_args:
-        model = MatchingModel.from_argparse_args(args)
-        model.load_state_dict(torch.load(args.checkpoint_path)['state_dict'])
-    else:
-        model = MatchingModel.load_from_checkpoint(args.checkpoint_path)
+    # Model
+    model = MatchingModel()
+    model.load_state_dict(
+        torch.load(
+            checkpoint_path,
+            map_location=torch.device('cpu'),
+            weights_only=True,  # Note
+        )['state_dict'],
+    )
+    # Note:
+    #   Caught following warning when update to torch >= 2.
+    #     FutureWarning: You are using `torch.load` with `weights_only=False`
+    #     (the current default value), which uses the default pickle module
+    #     implicitly. It is possible to construct malicious pickle data which
+    #     will execute arbitrary code during unpickling
+    #     (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models
+    #     for more details). In a future release, the default value for `weights_only`
+    #     will be flipped to `True`. This limits the functions that could be executed
+    #     during unpickling. Arbitrary objects will no longer be allowed to be loaded
+    #     via this mode unless they are explicitly allowlisted by the user via
+    #     `torch.serialization.add_safe_globals`. We recommend you start setting
+    #     `weights_only=True` for any use case where you don't have full control of
+    #     the loaded file. Please open an issue on GitHub for any issues related to
+    #     this experimental feature.
+    #       model.load_state_dict(torch.load(checkpoint_path, map_location=torch.device('cpu'))['state_dict'])
+    #   But the prediction using existing .ckpt (serialized without
+    #   torch.serialization.add_safe_globals) passed the test.
+    #   So the re-training is not necessary.
     callbacks = model.get_callbacks()
 
-    # trainer = pl.Trainer.from_argparse_args(args, logger=logger, callbacks=callbacks)
-    trainer = pl.Trainer.from_argparse_args(args, logger=False, callbacks=callbacks)
+    # Trainer
+    trainer = pl.Trainer(
+        logger=False,
+        callbacks=callbacks,
+    )
 
     # ===== predict =====
-    start = time()
+    # data setup
     console_logger.debug('===== data.setup() start =====')
-
-    id_map: list[dict[dict]] = data.setup(export_id_map=True, hWnd=hWnd)
+    start = time()
+    id_map: list[dict[str, dict]] = data.setup(export_id_map=True, hWnd=hWnd)
     """id_map (dict): hashed Tensor to BTI/ExportedID
     
     id_map[0]: id_maps of model 1.
-    id_map[0]['f']: 
+    id_map[0]['f']: dict
     
     """
-
     console_logger.debug(f"===== data.setup() ended with {int(time() - start)} sec. =====")
 
+    # declare Lightning objects with type hint
     trainer: pl.Trainer = trainer
     data_module: BRepMatchingDataModule = data
     data_set: BRepMatchingDataset = data_module.train_ds
@@ -141,14 +106,14 @@ def predict_brepmatching(zip_path, hWnd, threshold=0.7, image_path=None) -> dict
     hetdata_batch_after: 'HetDataBatch' = None
 
     # pick a HetDataBatch
-    start = time()
     console_logger.debug('===== hetdata_batch start =====')
+    start = time()
     hetdata_batch = next(iter(data_loader))  # if n_workers == 20, take 94 sec.
     console_logger.debug(f"===== hetdata_batch ended with {int(time() - start)} sec. =====")
 
-    start = time()
+    # start prediction
     console_logger.debug('===== prediction start =====')
-    # do_iteration
+    start = time()
     loss_tensor, hetdata_batch_after = model.do_iteration(
         hetdata_batch.clone(),
         threshold,  # threshold. by paper, 0.7.
@@ -172,6 +137,7 @@ def predict_brepmatching(zip_path, hWnd, threshold=0.7, image_path=None) -> dict
         id_matches.update(
             {id_map[0]['v'][model1_topo]: id_map[1]['v'][model2_topo]}
         )
+
     # # Save match prediction result
     # with open(os.path.join(os.path.dirname(__file__), 'predicted_id_matches.json'), 'w', encoding='utf-8') as f:
     #     json.dump(id_matches, f)

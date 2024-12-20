@@ -100,7 +100,7 @@ class build_ext(build_ext_orig):
 
 setup(
     name='brepmatching',
-    version='0.1.6',
+    version='0.1.7',
     description='Learning to match BRep Topology',
     author='Kazuma NAITO',
     author_email='kazuma.naito@murata.com',

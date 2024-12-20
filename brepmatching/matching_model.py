@@ -369,7 +369,7 @@ class MatchingModel(pl.LightningModule):
     def do_iteration(self,
                      data: HetData,
                      threshold: float,
-                     init_strategy: InitStrategy,
+                     init_strategy: type[InitStrategy],
                      use_adjacency: bool) -> tuple[torch.Tensor, HetData]:
         """
         Do the iteration matching the highest scored candidate until the score is below the threshold
