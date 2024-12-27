@@ -1,3 +1,6 @@
+rem setup.py のバージョン更新
+rem requirements.txt の更新（pyproject は build 用には使わない）
+
 del /Q brepmatching.egg-info\*
 del /Q build\*
 del /Q dist\*

@@ -6,6 +6,7 @@ authors = ["Kazuma NAITO <kazuma.naito@murata.com>"]
 license = "MIT"
 readme = "README.md"
 # このファイルは開発環境 poetry でしか使わない。
+# 実体は requirements.txt をアップデートすること。
 
 
 [tool.poetry.dependencies]
