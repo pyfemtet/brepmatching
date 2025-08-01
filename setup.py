@@ -6,19 +6,6 @@ import pathlib
 import pybind11
 
 
-def get_requirements(filename):
-    """Load requirements from a requirements file."""
-    ret = []
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-        for line in lines:
-            line = line.replace(' ', '').replace('\n', '')
-            line = line.split('#')[0]
-            if len(line) > 0:
-                ret.append(line)
-    return ret
-
-
 ## From https://stackoverflow.com/questions/42585210/extending-setuptools-extension-to-use-cmake-in-setup-py ##
 
 class CMakeExtension(Extension):
@@ -74,12 +61,6 @@ class build_ext(build_ext_orig):
 
 
 setup(
-    name='brepmatching',
-    version='0.1.8',
-    description='Learning to match BRep Topology',
-    author='Kazuma NAITO',
-    author_email='kazuma.naito@murata.com',
-    license='MIT',
     ext_modules=[
         CMakeExtension('coincidence_matching'),
         CMakeExtension('set_attributes'),
@@ -88,19 +69,4 @@ setup(
     cmdclass={
         'build_ext': build_ext
     },
-    packages=find_packages(),
-    package_data={
-        'brepmatching': [
-            'pyfemtet_scripts/data/dataset_to_predict/dataset/data/VariationData/*.csv',
-            'pyfemtet_scripts/*.ckpt',
-        ],
-        'automate': [
-            'cpp/*.cpp',
-            'cpp/*.h',
-            'include/Eigen/**',
-            'CMakeLists.txt',
-        ],
-    },
-    include_package_data=True,  # python package である brepmatching, automate 以外のファイルを配布物に含めるために MANIFEST.in を使います。
-    install_requires=get_requirements('requirements.txt'),
 )
