@@ -14,7 +14,6 @@ description = "Topology matching using brepmatching and Femtet."
 authors = [{ name = "pyfemtet", email = "148934231+pyfemtet@users.noreply.github.com" }]
 license = {file = "LICENSE.txt"}
 readme = "README.md"
-# requires-python = ">=3.8"  # 必要に応じて調整
 dependencies = [
     "torch>=2.5.1,<2.6.0",
     "torch-geometric>=2.6.1,<2.7.0",
@@ -39,15 +38,9 @@ brepmatching = [
     "pyfemtet_scripts/data/dataset_to_predict/dataset/data/VariationData/*.csv",
     "pyfemtet_scripts/*.ckpt",
 ]
-automate = [
-    "cpp/*.cpp",
-    "cpp/*.h",
-    "include/Eigen/**",
-    "CMakeLists.txt",
-]
 
 [tool.setuptools.packages.find]
-where = ["src"]  # list of folders that contain the packages (["."] by default)
+where = ["src"]
 include = [
     "brepmatching*",
     "automate*",
