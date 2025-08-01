@@ -79,7 +79,7 @@ class build_ext(build_ext_orig):
             '-DCMAKE_BUILD_TYPE=%s' % config,
             f'-DPYTHON_EXECUTABLE={python_executable}',  # Python パスが空白を含んでも動作する
             f'-Dpybind11_DIR={pybind11_dir}',  # 隔離環境にあるので空白は入らなし、入っても動作する
-            f'-DFEMTET_LIB_DIR={femtet_lib_dir}',
+            # f'-DFEMTET_LIB_DIR={femtet_lib_dir}',
         ]
 
         # example of build args
