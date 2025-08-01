@@ -57,6 +57,6 @@ message(STATUS "FEMTETMACRO_DLL_PATH: ${FEMTETMACRO_DLL_PATH}")
 # ===== Add subdirectories =====
 find_package(pybind11 CONFIG REQUIRED)
 
-add_subdirectory("set_attributes")
-add_subdirectory("coincidence_matching")
-add_subdirectory("automate")
+add_subdirectory("src/set_attributes")
+add_subdirectory("src/coincidence_matching")
+add_subdirectory("src/automate")

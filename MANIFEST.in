@@ -1,8 +1,8 @@
 include CMakeLists.txt
 include LICENSE.txt
 include LICENSES_OSS.txt
-include coincidence_matching/bindings.cpp
-include coincidence_matching/CMakeLists.txt
-include set_attributes/bindings.cpp
-include set_attributes/CMakeLists.txt
-include set_attributes.pyi
+include src/coincidence_matching/bindings.cpp
+include src/coincidence_matching/CMakeLists.txt
+include src/set_attributes/bindings.cpp
+include src/set_attributes/CMakeLists.txt
+include src/set_attributes.pyi
