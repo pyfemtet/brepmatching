@@ -8,34 +8,35 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # set(CMAKE_BUILD_TYPE Debug) # デバッグビルド
 
 # ===== FEMTET_ROOT_DIR の決定 =====
-if (NOT WIN32)
-    message(FATAL_ERROR "This package can only be built on Windows now.")
-endif()
 
-# 64bit FemtetMacro.dll 
-# 32 bit 対応する場合は Macro32 フォルダを外すこと
 # set(<variable> <value> [...] CACHE <type> <docstring> [FORCE])
 set(FEMTET_ROOT_DIR "" CACHE PATH "Femtet root directory")
 
-# 1. レジストリ優先取得
-if (FEMTET_ROOT_DIR STREQUAL "")
-    execute_process(
-      COMMAND reg query "HKLM\\SOFTWARE\\Classes\\TypeLib\\{7D1A10D9-22CE-4EDE-80FB-26A1E307D9FA}\\1.0\\0\\win64" /ve
-      OUTPUT_VARIABLE FEMTETMACRO_REG_RESULT
-      ERROR_QUIET
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    if (FEMTETMACRO_REG_RESULT)
-        string(REGEX REPLACE ".*REG_SZ[ \t]*" "" FEMTETMACRO_DLL_PATH "${FEMTETMACRO_REG_RESULT}")
-        # femtetmacro.dllはFEMTET_ROOT_DIR直下にある
-        get_filename_component(FEMTET_ROOT_DIR "${FEMTETMACRO_DLL_PATH}" DIRECTORY)
-    endif()
-endif()
-
-# 2. 環境変数から取得（レジストリがなかった場合のみ）
+# 1. 環境変数からの取得を優先
 if (FEMTET_ROOT_DIR STREQUAL "")
     if(DEFINED ENV{FEMTET_ROOT_DIR})
         set(FEMTET_ROOT_DIR "$ENV{FEMTET_ROOT_DIR}")
+        message(STATUS "Using `FEMTET_ROOT_DIR` environment variable: ${FEMTET_ROOT_DIR}")
+    endif()
+endif()
+
+# 2. 環境変数にない場合 レジストリから取得
+if (FEMTET_ROOT_DIR STREQUAL "")
+    if (WIN32)
+        # 64bit FemtetMacro.dll 
+        # 32 bit 対応する場合は Macro32 フォルダを外すこと
+        execute_process(
+        COMMAND reg query "HKLM\\SOFTWARE\\Classes\\TypeLib\\{7D1A10D9-22CE-4EDE-80FB-26A1E307D9FA}\\1.0\\0\\win64" /ve
+        OUTPUT_VARIABLE FEMTETMACRO_REG_RESULT
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (FEMTETMACRO_REG_RESULT)
+            string(REGEX REPLACE ".*REG_SZ[ \t]*" "" FEMTETMACRO_DLL_PATH "${FEMTETMACRO_REG_RESULT}")
+            # femtetmacro.dllはFEMTET_ROOT_DIR直下にある
+            get_filename_component(FEMTET_ROOT_DIR "${FEMTETMACRO_DLL_PATH}" DIRECTORY)
+            message(STATUS "Constructing `FEMTET_ROOT_DIR` from registory: ${FEMTET_ROOT_DIR}")
+        endif()
     endif()
 endif()
 
