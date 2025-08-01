@@ -1,8 +1,0 @@
-include CMakeLists.txt
-include LICENSE.txt
-include LICENSES_OSS.txt
-include src/coincidence_matching/bindings.cpp
-include src/coincidence_matching/CMakeLists.txt
-include src/set_attributes/bindings.cpp
-include src/set_attributes/CMakeLists.txt
-include src/set_attributes.pyi
