@@ -40,6 +40,11 @@ del predictor
 
 ```
 
+## Development
+The editable mode install is currently not supported.
+Please run `pip install -U .` to apply your code to the environment.
+
+
 ## References
 [1] B-rep Matching for Collaborating Across CAD Systems,  
 [https://doi.org/10.48550/arXiv.2306.03169](https://doi.org/10.48550/arXiv.2306.03169)
