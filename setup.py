@@ -6,6 +6,22 @@ import pathlib
 import pybind11
 
 
+if (
+    os.environ.get('SA_LIB_DIR')
+    and os.environ.get('CM_LIB_DIR')
+    and os.environ.get('BREPLOADER_DIR')
+):
+    config = 'Debug'
+elif (
+    os.environ.get('SA_LIB_DIR') is None
+    and os.environ.get('CM_LIB_DIR') is None
+    and os.environ.get('BREPLOADER_DIR') is None
+):
+    config = 'Release'
+else:
+    raise EnvironmentError('Incomplete environment settings!')
+
+
 ## From https://stackoverflow.com/questions/42585210/extending-setuptools-extension-to-use-cmake-in-setup-py ##
 
 class CMakeExtension(Extension):
@@ -33,12 +49,10 @@ class build_ext(build_ext_orig):
         extdir.parent.mkdir(parents=True, exist_ok=True)
 
         # example of cmake args
-        config = 'Debug' if self.debug else 'Release'
         pybind11_dir = str(pathlib.Path(pybind11.__file__).parent/'share'/'cmake'/'pybind11').replace('\\', '/')
         python_executable = sys.executable.replace('\\', '/')
         cmake_args = [
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_%s=%s' % (config.upper(), str(extdir.parent.absolute())),
-            '-DCMAKE_BUILD_TYPE=%s' % config,
             '-DCMAKE_BUILD_TYPE=%s' % config,
             f'-DPYTHON_EXECUTABLE={python_executable}',  # Python パスが空白を含んでも動作する
             f'-Dpybind11_DIR={pybind11_dir}',  # 隔離環境にあるので空白は入らなし、入っても動作する

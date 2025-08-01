@@ -18,7 +18,11 @@ target_compile_definitions(automate_cpp PRIVATE "-DEIGEN_MPL2_ONLY")
 target_include_directories(automate_cpp PUBLIC ${FEMTET_LIB_DIR}/breploader/include)
 
 # DLLライブラリへのリンク設定（ビルドしたDLLが存在する場所）
-target_link_libraries(automate_cpp PUBLIC ${FEMTET_LIB_DIR}/breploader/lib/breploader.lib)
+if (DEFINED ENV{BREPLOADER_DIR})
+    target_link_libraries(automate_cpp PUBLIC $ENV{BREPLOADER_DIR}/breploader_d.lib)
+else()
+    target_link_libraries(automate_cpp PUBLIC ${FEMTET_LIB_DIR}/breploader/lib/breploader.lib)
+endif()
 
 # Eigen3 へのリンクを追加
 target_include_directories(automate_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
