@@ -2,7 +2,6 @@ import os
 import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from concurrent.futures import ProcessPoolExecutor
 
 import shutil
 
@@ -54,9 +53,6 @@ class DatasetCreatorToPredict(object):
     BASE_MODEL_NAME = 'model'  # If change this, change csv template too.
 
     def __init__(self, Femtet):
-        # Prepare ProcessPoolExecutor
-        self.executor = ProcessPoolExecutor()
-
         # Prepare temporary folder
         self.dataset_workspace = TemporaryDirectory()
         self.dataset_workspace_path = self.dataset_workspace.name
@@ -69,7 +65,6 @@ class DatasetCreatorToPredict(object):
 
     @property
     def target_dir(self):
-        # このパスを変える際は setup.py も変更すること
         return os.path.join(self.dataset_workspace_path, 'data', 'dataset_to_predict', 'dataset', 'data')
 
     def _init_workspace(self):
@@ -83,7 +78,7 @@ class DatasetCreatorToPredict(object):
         os.makedirs(os.path.join(self.target_dir, 'Matches'))
 
         # copy VariationData files from template
-        # (These files are listed in setup.py)
+        # (These files are listed in pyproject.toml)
         shutil.copytree(
             src=os.path.join(os.path.dirname(__file__), 'data/dataset_to_predict/dataset/data/VariationData'),
             dst=os.path.join(self.target_dir, 'VariationData')
@@ -142,9 +137,7 @@ class DatasetCreatorToPredict(object):
 
         return zip_path
 
-    def __del__(self):
+    def close(self):
         # remove temporary folder
         self.dataset_workspace.cleanup()
-
-        # shutdown ProcessPoolExecutor
-        self.executor.shutdown()
+        

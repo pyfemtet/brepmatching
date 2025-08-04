@@ -1,6 +1,5 @@
-import os
 from brepmatching.pyfemtet_scripts.predict import predict_brepmatching
-from brepmatching.pyfemtet_scripts.dataset_creator_to_predict import DatasetCreatorToPredict, embed_bti_export_id
+from brepmatching.pyfemtet_scripts.dataset_creator_to_predict import DatasetCreatorToPredict
 
 
 class Predictor:
@@ -21,7 +20,6 @@ class Predictor:
             threshold=threshold,
             image_path=_image_path,
         )
-
-    def __del__(self):
-        # finish process and delete temporary folder
-        del self.zipper
+    
+    def close(self):
+        self.zipper.close()
