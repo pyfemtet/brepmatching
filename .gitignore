@@ -20,4 +20,5 @@ brepmatching - site packages.lnk
 dist/
 sandbox/
 .env
+.env_publish
 src/brepmatching/__version__.py
