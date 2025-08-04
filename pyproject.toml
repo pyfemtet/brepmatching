@@ -1,6 +1,7 @@
 [build-system]
 requires = [
     "setuptools>=75.2.0,<76.0.0",
+    "setuptools-scm[toml]>=6.2",
     "wheel",
     "cmake>=3.30.5,<4.0.0",
     "pybind11[global]>=2.13.6,<3.0.0",
@@ -9,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "brepmatching"
-version = "0.1.8"
+dynamic = ["version"]
 description = "Topology matching using brepmatching and Femtet."
 authors = [{ name = "pyfemtet", email = "148934231+pyfemtet@users.noreply.github.com" }]
 license = {file = "LICENSE.txt"}
@@ -47,3 +48,6 @@ include = [
     "coincidence_matching*",
     "set_attributes*",
 ]
+
+[tool.setuptools_scm]
+write_to = "src/brepmatching/__version__.py"
